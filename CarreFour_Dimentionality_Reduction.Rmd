@@ -1,0 +1,352 @@
+---
+title: "Dimensionality Reduction"
+output: html_document
+
+
+##  CarreFour Kenya Sale Increment Strategies.
+### 1. Research Question
+
+Carrefour Kenya and are currently undertaking a project that will inform the marketing department on the most relevant marketing strategies that will result in the highest no. of sales (total price including tax).This project is aimed at doing analysis on the dataset provided by carrefour and create insights on how to achieve highest sales. 
+
+
+### 2. Metric of Success
+Identifying the principal components that contribute a highly to behaviour of sales.
+
+### 3. Understanding the context.
+
+The provided data if from Carre Four Kenya's database and shows transactions that have been underway over a certain period. This is a reflection of behaviour of sales at carre four and well use it to identify principal components in the transactions.
+
+### 4. Recording the Experimental Design
+
+a. Data Loading
+b. Data Cleaning and preprocessing
+c. Exploratory Data Analysis
+d. Implementing PCA.
+e. Recommendations and Conclusions.
+
+### 5. Data Relevance.
+
+The provided data is relevant for this kind of study since it has a reflection of carre four sales.
+
+### Data Preview
+
+#### Loading the libraries
+```{r}
+#install.packages('data.table')
+#install.packages('tidyverse')
+#install.packages("dplyr")
+#install.packages("modelr")
+#install.packages("broom")
+#install.packages("caret")
+#install.packages("rpart")
+#install.packages("ggplot2")
+#install.packages("Amelia")
+
+library(modelr)
+library(broom)
+library(caret)
+library(rpart)
+library(ggplot2)
+library(Amelia)
+library(dplyr)
+library(data.table)
+library(tidyverse)
+```
+
+#### Loading the data
+```{r}
+carrefour <- fread('http://bit.ly/CarreFourDataset')
+carrefour
+```
+
+#### Checking on the first 6 entries
+```{r}
+head(carrefour, 6)
+```
+
+#### checking on last 6 entries
+```{r}
+tail(carrefour, 6)
+```
+
+#### checking on data types
+```{r}
+str(carrefour)
+```
+
+#### Checking on dataset description
+```{r}
+summary(carrefour)
+```
+
+#### checking the size/shape of a dataframe 
+```{r}
+dim(carrefour)
+```
+
+### Data Preprocessing.
+
+#### i. Completeness
+This is achieved by checking for missing values if any imputed to ensure correct predictions are made.
+```{r}
+is.null(carrefour)
+```
+
+##### Total number of null valuesin dataset
+```{r}
+total_null <- sum(is.na(carrefour))
+total_null
+```
+
+#### ii. Consistency.
+Consistency is achieved when all the duplicated rows are done away with.
+```{r}
+duplicated_rows <- carrefour[duplicated(carrefour), ]
+duplicated_rows
+```
+
+```{r}
+duplicated(carrefour)
+```
+
+#### iii. Relevance.
+
+Relevance is achieved by ensuring all the features provided for the analysis are relevant to the objective Which in this case all provided features are.
+
+#### iv. Accuracy.
+
+Checking that all entries are correct.
+
+#### Outliers
+We can visualize any outliers in a dataset using boxplots
+
+```{r}
+
+colnames(carrefour)
+
+```
+
+###### Renaming column names
+```{r}
+
+# Rename column where names 
+names(carrefour)[names(carrefour) == "Invoice ID"] <- "Invoice_ID"
+names(carrefour)[names(carrefour) == "Customer type"] <- "Customer_type"
+names(carrefour)[names(carrefour) == "Product line"] <- "Product_line"
+names(carrefour)[names(carrefour) == "gross margin percentage"] <- "gross_margin_percentage"
+names(carrefour)[names(carrefour) == "Unit price"] <- "Unit_price"
+names(carrefour)[names(carrefour) == "gross income"] <- "gross_income"
+colnames(carrefour)
+```
+
+```{r}
+str(carrefour)
+```
+
+a. Unit Price.
+```{r}
+a <- carrefour$Unit_price
+boxplot(a)
+
+```
+
+b.Quantity
+```{r}
+quantity <- carrefour$Quantity
+boxplot(quantity)
+
+```
+
+c. cogs
+```{r}
+cogs <- carrefour$cogs
+boxplot(cogs)
+
+```
+
+d. Gross margin percentage
+```{r}
+b <- carrefour$gross_margin_percentage
+boxplot(b)
+
+```
+
+e. Gross income
+```{r}
+gross_income <- carrefour$gross_income
+boxplot(gross_income)
+
+```
+
+e. Rating 
+```{r}
+rating <- carrefour$Rating 
+boxplot(rating)
+
+```
+
+e. Total 
+```{r}
+total <- carrefour$Total 
+boxplot(total)
+
+```
+
+###### The total and gross income have outliers .
+
+ To see the number of outliers
+ 
+Gross Income
+```{r}
+a <- carrefour$gross_income
+boxplot.stats(a)$out
+
+```
+The outlier entries are 9. 
+
+Total
+```{r}
+a <- carrefour$Total
+boxplot.stats(a)$out
+
+```
+The outlier entries are 9. 
+
+
+### Exploratory Data Analysis.
+#### Univariate Analysis.
+
+a. Unit Price
+```{r}
+mean(carrefour$Unit_price, trim = 0, na.rm=FALSE)
+median(carrefour$Unit_price,na.rm=FALSE)
+range(carrefour$Unit_price,na.rm=FALSE, finite=FALSE)
+quantile(carrefour$Unit_price, probs=seq(0, 1,0.25), na.rm=FALSE, names=TRUE, type=7)
+var(carrefour$Unit_price)
+sd(carrefour$Unit_price,na.rm=FALSE)
+```
+
+mode
+```{r}
+getmode <- function(v){
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+```
+
+```{r}
+unit_price_mode <- getmode(carrefour$Unit_price)
+unit_price_mode
+
+```
+
+ Visualizing Unit Price.
+```{r}
+d<-hist(carrefour$Unit_price, breaks=10, col="red", xlab="Unit price",main="Unit price")
+plot(d)
+```
+The highest unit prices are between 20-30, 70-80 and 90-100.
+
+
+```{r}
+head(carrefour)
+```
+
+
+b. Quantity
+```{r}
+hist(carrefour$Quantity, breaks=12, col="skyblue",xlab="Quantity", main='Quantity of Products')
+```
+Most product quantities bought are 1 or 2.
+
+c. Tax.
+```{r}
+d <- density(carrefour$Tax, xlab="Tax")
+plot(d)
+```
+
+
+d. cogs
+```{r}
+cogs <- hist(carrefour$cogs, xlab="cogs")
+plot(cogs)
+```
+The highest number of cogs is at zero but the occurence reduces as the value of cogs increases.
+
+
+```{r}
+head(carrefour)
+```
+
+
+### Bivariate Analysis.
+Covariance 
+Covariance is the statistical representation of the degree to which two variables vary from each other.
+
+#### Covariance.
+```{R}
+carrefour_cov <- carrefour[,c(6,7,8,12,14,16)]
+cov(carrefour_cov)
+```
+
+#### Correlation.
+```{R}
+carrefour.cor <- cor(carrefour_cov, method=c('spearman'))
+```
+
+visualizing
+```{R}
+#install.packages('corrplot')
+library(corrplot)
+corrplot(carrefour.cor)
+```
+cogs,gross income, tax and total are highly correlated to each other.
+
+
+
+### IMPLEMENTATION.
+1.Dimensionality Reduction.
+```{r}
+carrefour_1 <- carrefour
+head(carrefour_1)
+```
+
+###### passing numerical data to prcomp()
+```{r}
+carrefour.pca <- prcomp(carrefour_1[,c(6,7,8,12,14,15,16)], center =TRUE, scale. = TRUE)
+summary(carrefour.pca)
+
+```
+We obtain 7 principal components each explaining the total variation of dataset.
+PC1 explains 70% and PC2 and PC3 14% each.
+
+
+###### calling str() to have a look at PCA object
+```{r}
+str(carrefour.pca)
+```
+
+
+Plotting PCA.
+```{r}
+#install.packages("devtools")
+#install_github("vqv/ggbiplot")
+library(devtools)
+library(ggbiplot)
+
+```
+
+
+```{r}
+ggbiplot(carrefour.pca)
+
+```
+
+
+### Follow up questions.
+#### Did we have enough data for the study?
+yes
+
+#### Was the data relevant?
+yes
+

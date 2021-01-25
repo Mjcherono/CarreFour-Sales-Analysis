@@ -1,0 +1,155 @@
+---
+title: "CarreFour Feature Selection IP"
+output: html_document
+
+
+##  CarreFour Kenya Sales increment strategies .
+### 1. Research Question
+DA data analyst at Carrefour Kenya and are currently undertaking a project that will inform the marketing department on the most relevant marketing strategies that will result in the highest no. of sales (total price including tax).
+
+
+### 2. Metric of Success
+
+Identify the association rules of product transactions in the store.
+
+### 3. Understanding the context.
+The provided data has been acquired from the carre four stores in Kenya of transactions that have been made over time and my goal of 
+this research is to come up with insights from the analysis.
+
+### 4. Recording the Experimental Design
+
+a. Data Loading
+b. Data Cleaning and preprocessing
+c. Exploratory Data Analysis
+d. Associative rules implememntation
+e. Recommendations and Conclusions.
+
+### 5. Data Relevance.
+
+The provided data is relevant for this kind of study since it has a reflection of how current transactions happen and the association it portrays.
+
+### Data Preview
+
+#### Loading the libraries
+```{r}
+library(modelr)
+library(broom)
+library(caret)
+library(rpart)
+library(ggplot2)
+library(Amelia)
+library(dplyr)
+library(data.table)
+library(tidyverse)
+```
+
+#### Loading the data
+
+```{r}
+sales <- fread('http://bit.ly/SupermarketDatasetII')
+head(sales)
+```
+
+checking out the dataset
+```{r}
+str(sales)
+```
+
+Converting entries to transactions.
+```{r}
+library(arules)
+
+path <-"http://bit.ly/SupermarketDatasetII"
+
+Transactions<-read.transactions(path, sep = ",")
+Transactions
+```
+
+
+Verifying the object's class
+```{r}
+class(Transactions)
+```
+
+previewing our first 5 transations.
+```{r}
+inspect(Transactions[1:5])
+```
+
+Previewing items that make up our dataset
+```{r}
+items<-as.data.frame(itemLabels(Transactions))
+colnames(items) <- "Item"
+head(items, 10) 
+```
+
+summary of the transaction dataset.
+```{r}
+summary(Transactions)
+```
+
+Exploring frequency of some articles at index 3 to 8.
+```{r}
+itemFrequency(Transactions[, 3:8],type = "absolute")
+round(itemFrequency(Transactions[, 3:8],type = "relative")*100,2)
+
+```
+
+Build the model
+model 1 : support =0.001 and confidence = 0.8
+```{r}
+sales.rules <- apriori (Transactions, parameter = list(supp = 0.001, conf = 0.8))
+sales.rules
+
+```
+
+model 1 has 74 rules.
+
+
+model 2 : support =0.002 and confidence = 0.8
+```{r}
+sales.rules2 <- apriori (Transactions, parameter = list(supp = 0.002, conf = 0.8))
+sales.rules2
+
+```
+
+model 2 has 2 rules which means alot of ossible rules will be overlooked. 
+
+
+model 3 : support =0.002 and confidence = 0.6
+```{r}
+sales.rules3 <- apriori (Transactions, parameter = list(supp = 0.002, conf = 0.6))
+sales.rules3
+
+```
+model 3 produces 43 rules.
+
+
+Exploring our model
+```{r}
+summary(sales.rules)
+
+```
+
+
+Observing rules built in our model
+```{r}
+inspect(sales.rules[1:5])
+```
+
+
+```{r}
+summary(sales.rules)
+```
+
+### Recommendations.
+The best set of rules is model 3 with a support of 0.002 and confidence of 0.6.
+
+
+### Follow up questions.
+#### Did we have enough data for the study?
+yes
+
+#### Was the data relevant?
+yes
+

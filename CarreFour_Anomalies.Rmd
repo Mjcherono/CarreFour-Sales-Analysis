@@ -1,0 +1,209 @@
+---
+title: "CarreFour Sales and Marketing Strategies"
+output: html_document
+
+
+##  CarreFour Sales and Marketing Strategies.
+### 1. Research Question
+
+Carrefour Kenya and are currently undertaking a project that will inform the marketing department on the most relevant marketing strategies that will result in the highest no. of sales (total price including tax).This project is aimed at doing analysis on the dataset provided by carrefour and create insights on how to achieve highest sales. 
+. 
+
+
+### 2. Metric of Success
+
+Be able to do away with redundancy in the dataset and any existing anomaly.
+
+### 3. Understanding the context.
+
+CarreFour is an International chain of retail supemarkets in the world, It was set up in Kenya in the year 2016 and has been performing well over the years.
+This project is aimed at creating insights from existing and current trends to develop marketing strategies that will enable the marketing team achieve higher sales.
+
+### 4. Recording the Experimental Design
+
+a. Data Loading
+b. Data Cleaning and preprocessing
+c. Exploratory Data Analysis
+d. Implementation of solution
+e. Recommendations and Conclusions.
+
+### 5. Data Relevance.
+
+he provided data is relevant for this study since it's been sourced from CarreFour database and is a reflection of current transactions.
+
+
+### Data Preview
+
+#### Loading the libraries
+```{r}
+
+library(modelr)
+library(broom)
+library(caret)
+library(rpart)
+library(ggplot2)
+library(Amelia)
+library(dplyr)
+library(data.table)
+library(tidyverse)
+```
+
+#### Loading the data
+```{r}
+sales.dates <- fread('http://bit.ly/CarreFourSalesDataset')
+sales.dates
+```
+
+#### Checking on the first 6 entries
+```{r}
+head(sales.dates, 6)
+```
+
+#### checking on last 6 entries
+```{r}
+tail(sales.dates, 6)
+```
+
+#### checking on data types
+```{r}
+str(sales.dates)
+```
+
+#### Checking on dataset description
+```{r}
+summary(sales.dates)
+```
+
+#### checking the size/shape of a dataframe 
+```{r}
+dim(sales.dates)
+```
+
+### Data Preprocessing.
+
+#### i. Completeness
+This is achieved by checking for missing values if any imputed to ensure correct predictions are made.
+```{r}
+is.null(sales.dates)
+```
+
+##### Total number of null valuesin dataset
+```{r}
+total_null <- sum(is.na(sales.dates))
+total_null
+```
+
+###### checking for missing values in every column
+```{r}
+lapply(sales.dates, function(x) sum(is.na(x)))
+```
+
+#### ii. Consistency.
+Consistency is achieved when all the duplicated rows are done away with.
+```{r}
+duplicated_rows <- sales.dates[duplicated(sales.dates), ]
+duplicated_rows
+```
+
+```{r}
+anyDuplicated(sales.dates)
+```
+
+#### iii. Relevance.
+
+Relevance is achieved by ensuring all the features provided for the analysis are relevant to the objective Which in this case all provided features are.
+
+#### iv. Accuracy.
+
+Checking that all entries are correct.
+
+#### Outliers
+We can visualize any outliers in a dataset using boxplots
+
+```{r}
+
+colnames(sales.dates)
+
+```
+
+
+a. Sales
+```{r}
+
+boxplot(sales.dates$Sales)
+
+```
+
+
+### ANOMALY DETECTION.
+```{r}
+#install.packages('tidyverse')
+#install.packages('tibbletime')
+#install.packages('anomalize')
+#install.packages('timetk')
+
+
+library(tidyverse)
+library(tibbletime)
+library(anomalize)
+library(timetk)
+
+head(sales.dates)
+sales.dates$Date <- as.Date(sales.dates$Date, format = "%m/%d/%y")
+str(sales.dates)
+
+
+#Convertion to POCIXct type
+sales.dates$Date <- as.POSIXct(sales.dates$Date)
+
+
+sales_tbl <- as_tibble(sales.dates)
+head(sales_tbl)
+
+
+#sales_tbl <- na.omit(sales_tbl)
+head(sales_tbl)
+
+sales_tbl %>%
+  time_decompose(Sales, method = "stl",  frequency = "auto", trend = "auto") %>%  
+  anomalize(remainder, method = "gesd", alpha = 0.05, max_anoms = 0.1) %>% 
+  plot_anomaly_decomposition()
+
+```
+
+
+Recomposing.
+```{r}
+sales_tbl %>% 
+  time_decompose(Sales, method = "stl",  frequency = "auto", trend = "auto") %>% 
+  anomalize(remainder,  method = "gesd", alpha = 0.05, max_anoms = 0.1) %>%
+  time_recompose() %>%  
+  plot_anomalies(time_recomposed = TRUE, ncol = 3, alpha_dots = 0.5)
+```
+
+
+Finding Anomalies.
+```{r}
+anomalies = sales_tbl %>% 
+  time_decompose(Sales, method = "stl",  frequency = "auto", trend = "auto") %>%  
+  anomalize(remainder,  method = "gesd", alpha = 0.05, max_anoms = 0.1) %>%  
+  time_recompose() %>%  
+  filter(anomaly == 'Yes')
+  
+anomalies
+```
+
+The dates on the list contain anomalies.
+
+
+
+### Conclusion.
+The listed anomalies should be looked into by the team since it shouldnt just be considered as normal entries in the data.
+
+### Follow up questions.
+#### Did we have enough data for the study?
+yes
+
+#### Was the data relevant?
+yes
+
